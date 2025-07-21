@@ -1,0 +1,29 @@
+name: Branch Protection
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  prevent-direct-push:
+    name: Prevent Direct Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if push came from PR merge
+        run: |
+          echo "Push to ${{ github.ref }} detected"
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+          # Allow merges from approved PRs
+          if [[ "${{ github.event.head_commit.message }}" == *"Merge pull request"* ]] || [[ "${{ github.event.head_commit.message }}" == *"Merge branch"* ]]; then
+            echo "✅ Push came from PR merge - allowed"
+          else
+            echo "❌ Direct push to ${{ github.ref }} is not allowed"
+            echo "Please use Pull Requests:"
+            echo "1. Create a feature branch: git checkout -b feature/your-feature"
+            echo "2. Make your changes and commit"
+            echo "3. Push: git push -u origin feature/your-feature"
+            echo "4. Create a Pull Request on GitHub"
+            exit 1
+          fi
