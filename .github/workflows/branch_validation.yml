@@ -1,0 +1,58 @@
+name: Branch Validation
+on:
+  pull_request:
+    branches: [ develop, main ]
+jobs:
+  validate-branch-name:
+    name: Validate Branch Name
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check branch naming convention
+      run: |
+        branch_name="${{ github.head_ref }}"
+        echo "Checking branch: $branch_name"
+        
+        # Allow these branch patterns
+        if [[ "$branch_name" =~ ^feature/.+ ]]; then
+          echo "✅ Valid feature branch"
+        elif [[ "$branch_name" =~ ^hotfix/.+ ]]; then
+          echo "✅ Valid hotfix branch"
+        elif [[ "$branch_name" =~ ^release/.+ ]]; then
+          echo "✅ Valid release branch"
+        elif [[ "$branch_name" == "develop" ]]; then
+          echo "✅ Valid develop branch"
+        else
+          echo "❌ Invalid branch name: $branch_name"
+          echo "Please use one of these formats:"
+          echo "  - feature/your-feature-name"
+          echo "  - hotfix/your-hotfix-name"
+          echo "  - release/version-number"
+          echo "  - develop (for direct integration)"
+          exit 1
+        fi
+  validate-pr-target:
+    name: Validate PR Target
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check PR target branch
+      run: |
+        source_branch="${{ github.head_ref }}"
+        target_branch="${{ github.base_ref }}"
+        
+        echo "PR: $source_branch → $target_branch"
+        
+        # Enhanced validation with flexible targets
+        if [[ "$source_branch" =~ ^feature/.+ && "$target_branch" != "develop" ]]; then
+          echo "❌ Feature branches should target 'develop'"
+          exit 1
+        elif [[ "$source_branch" =~ ^release/.+ && "$target_branch" != "main" && "$target_branch" != "develop" ]]; then
+          echo "❌ Release branches should target 'main' or 'develop'"
+          exit 1
+        elif [[ "$source_branch" == "develop" && "$target_branch" != "main" ]]; then
+          echo "❌ Develop branch should target 'main'"
+          exit 1
+        fi
+        
+        echo "✅ PR target is correct"
